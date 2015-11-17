@@ -1,0 +1,35 @@
+MPASM  5.30.01                             LCD.H   4-19-2015  0:42:48         PAGE  1
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+Error[108]  : Illegal character (/)
+  00000000            00001 //lcd
+                      00002 
+Error[122]  : Illegal opcode (setPortBOutput)
+                      00003 void setPortBOutput():
+Error[108]  : Illegal character ({)
+                      00004         {
+Warning[207]: Found label after column 1. (ADCON1)
+  0000000F            00005         ADCON1=0x0F;
+Warning[207]: Found label after column 1. (TRISB)
+  00000000            00006         TRISB=0x00;
+Error[108]  : Illegal character (})
+  00000000            00007         }
+Error[129]  : Expected (END)
+MPASM  5.30.01                             LCD.H   4-19-2015  0:42:48         PAGE  2
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+ADCON1                            0000000F
+TRISB                             00000000
+__18F4550                         00000001
+
+Errors   :     5
+Warnings :     2 reported,     0 suppressed
+Messages :     0 reported,     0 suppressed
+
+
