@@ -1,5 +1,13 @@
+/*
+PIC18F4550 - Slave_main.c
+The purpose of this program is to control a digital output (Port C) and one
+ADC channel through a RaspberryPi sending commands via I2C.
+*/
+
+
+
 #include <p18f4550.h>
-#include "i2c.h"
+#include "i2c.h" //I2C libraries... not useful
 #include "sw_i2c.h"
 #include "delays.h"
 #include "timers.h"
@@ -25,6 +33,13 @@
 //define  Slave Address
 #define SLAVE_PIC 0x14
 
+
+//Definition of commands
+#define DIGITAL_ALL_ON 0x10
+#define DIGITAL_ALL_OFF 0x11
+
+
+
 //Define Function Prototypes
 
 void interruptVectorHigh( void );
@@ -32,15 +47,18 @@ void interruptHandlerHigh( void );
 void delayms( void );
 
 //variables
-unsigned char IntF = 0; //this appears to be a flag
+unsigned char IntF = 0; //this appears to be a 
+unsigned char commandI2C;
+unsigned char outputI2C;
 unsigned char mivar1, mivar2; // mivar1 =??? ; mivar2 =???;
+
 
 
 void main()
 {
 	// Main. PIC register configuration
 	OSCCON = 0x7F; //
-	ADCON1 = 0xFF; //no analogic inputs
+	ADCON1 = 0xFF; //no analog inputs
 	
 	//LATA = 0;
 	//LATB = 0;
@@ -51,6 +69,7 @@ void main()
 
 	//Main. PIC SSP Module configuration
 	TRISB = 0xFF; //port b Input
+	TRISC = 0; //Port as outputs
 	
 	SSPCON1 = 0x36; // 7 bit Slave no interrupt
 	SSPCON2 = 0x00; // no masking, no clock stretch
@@ -71,9 +90,10 @@ void main()
 	
 	//Main. program loop
 	
+	//Port Initialization
 	LATAbits.LATA1 = 1;
 	LATAbits.LATA0 = 0;	
-
+	LATC = 0;
 	
 
 	while(1){
@@ -81,28 +101,16 @@ void main()
 	if( IntF ){
 
 			
-			if ( mivar2 == 0xFF ){
-				LATAbits.LATA0 = !PORTAbits.RA0;
-				Delay1KTCYx(50);
-				LATAbits.LATA0 = !PORTAbits.RA0;
-				Delay1KTCYx(50);
-				LATAbits.LATA0 = !PORTAbits.RA0;
-				Delay1KTCYx(50);
+			if ( commandI2C == DIGITAL_ALL_ON ){
+				LATC = 0x07;
 			}
 
-			if ( mivar2 == 0x66 ){
-				LATAbits.LATA0 = !PORTAbits.RA0;
-				Delay1KTCYx(50);
-				LATAbits.LATA0 = !PORTAbits.RA0;
-				Delay1KTCYx(50);
-				LATAbits.LATA0 = !PORTAbits.RA0;
-				Delay1KTCYx(50);
-				LATAbits.LATA0 = !PORTAbits.RA0;
+			if ( commandI2C == DIGITAL_ALL_OFF ){
+				LATC = 0x00;
 			}
 			
-			
-			mivar2 = 0x00;
-			IntF = 0;
+			commandI2C = 0x00;
+
 		}
 	}
 }
@@ -126,44 +134,32 @@ void interruptHandlerHigh(){
 	if ( PIR1bits.SSPIF ){
 		//LATAbits.LATA1 = !PORTAbits.RA1;
 		
-
+		//Detect Address not implemented
 		if ( !SSPSTATbits.R_W & !SSPSTATbits.D_A & SSPSTATbits.BF ){
 			mivar1 = SSPBUF;
 			PIR1bits.SSPIF = 0;
-			
-			
-//			if ( mivar1 == 0x00 ){
-//				LATAbits.LATA0 = !PORTAbits.RA0;
-//			}			
 
 		}
 
+		//DATA READ FROM I2C
 		if ( !SSPSTATbits.R_W & SSPSTATbits.D_A & SSPSTATbits.BF ){
-			mivar2 = SSPBUF;
-			LATAbits.LATA1 = !PORTAbits.RA1;
+			commandI2C = SSPBUF;
 			PIR1bits.SSPIF = 0;	
 		}
-		
-		if ( SSPSTATbits.R_W ){
-			SSPBUF = 0x14;
-			SSPCON1bits.CKP = 1;
 
-			SSPBUF = 0x14;
+		/*
+		//Write commands
+		if ( SSPSTATbits.R_W ){
+
+			SSPBUF = 0x14;			//data to write
 			SSPCON1bits.CKP = 1;
 
 			LATAbits.LATA1 = !PORTAbits.RA1;
 			PIR1bits.SSPIF = 0;
-//			if ( mivar2 == 0x66 ){
-//				LATAbits.LATA0 = !PORTAbits.RA0;
-//			}			
-		}
 
-//		if ( DataRdyI2C() ){
-//
-//  			mivar1 = ReadI2C();
-//			LATAbits.LATA1 = !PORTAbits.RA1;
-//			PIR1bits.SSPIF = 0;
-//		}
+		}
+		*/
+
 		SSPCON1bits.WCOL = 0; // slew rate
 		SSPCON1bits.SSPOV = 0; // slew rate
 		SSPCON1bits.CKP = 1;
